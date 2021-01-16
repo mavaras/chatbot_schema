@@ -6,7 +6,10 @@ from flask_cors import CORS
 
 # Local libraries
 from chatbot import do_predict
-from constants import FB_API_URL
+from constants import (
+    FB_API_URL,
+    FB_WEBHOOKS_VERIFICATION_TOKEN
+)
 
 app = Flask(__name__)
 CORS(app)
@@ -26,7 +29,8 @@ def webhook():
     4. Our backend recieve the event and returns an HTTP response
     """
     token = request.args.get('hub.verify_token')
-    if token == credentials.WEBHOOK_VERIFY_TOKEN:
+    print(token)
+    if token == FB_WEBHOOKS_VERIFICATION_TOKEN:
         return request.args.get('hub.challenge')
     return 'Invalid authorization'
 
