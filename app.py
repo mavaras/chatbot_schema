@@ -1,26 +1,50 @@
 # Flask app init
 
+# Standard libraries
+import os
+import requests
+
 # Third party libraries
 from flask import Flask, request
 from flask_cors import CORS
+
+from keras.models import model_from_json
+from tensorflow import keras
 
 # Local libraries
 from chatbot import do_predict
 from constants import (
     FB_API_URL,
-    FB_WEBHOOKS_VERIFICATION_TOKEN
+    FB_WEBHOOKS_VERIFICATION_TOKEN,
+    JSON_MODEL_PATH,
+    MODEL_PATH,
+    MODEL_WEIGHTS_PATH
 )
 
-app = Flask(__name__)
-CORS(app)
+APP = Flask(__name__)
+CORS(APP)
+
+JSON_MODEL = open(JSON_MODEL_PATH, 'r')
+JSON_MODEL_CONTENT = JSON_MODEL.read()
+JSON_MODEL.close()
+TRAINED_MODEL = model_from_json(JSON_MODEL_CONTENT)
+TRAINED_MODEL.load_weights(MODEL_WEIGHTS_PATH)
 
 
-@app.route('/')
+@APP.route('/')
 def entrypoint():
-    return '<h1>ChatBot app entrypoint. Pls notice that model path is /cb</h1>'
+    return '<h1>ChatBot app entrypoint. Please notice that model path is /cb</h1>'
 
 
-@app.route('/cb', methods=['GET'])
+@APP.route('/test/<word>')
+def test(word: str = None):
+    res = '-'
+    if word:
+        res = do_predict(TRAINED_MODEL, str(word))
+    return f'<h1>{res}</h1>'
+
+
+@APP.route('/chatbot', methods=['GET'])
 def webhook():
     """ Facebook webhooks flow is:
     1. Visitor sends a message on the messenger to the chatbot
@@ -29,30 +53,31 @@ def webhook():
     4. Our backend recieve the event and returns an HTTP response
     """
     token = request.args.get('hub.verify_token')
-    print(token)
     if token == FB_WEBHOOKS_VERIFICATION_TOKEN:
         return request.args.get('hub.challenge')
     return 'Invalid authorization'
 
 
-@app.route('/cb', methods=['POST'])
+@APP.route('/chatbot', methods=['POST'])
 def chatbot():
-    request = request.get_json()
-    message = request['entry'][0]['messaging'][0]['message']
-    if message['text']:
+    data = request.get_json()
+    message = data['entry'][0]['messaging'][0]['message']
+    sender_id = data['entry'][0]['messaging'][0]['sender']['id']
+    print(message)
+    print(sender_id)
+    if 'text' in message and message['text']:
         request_body = {
             'recipient': {
                 'id': sender_id
             },
             'message': {
-                'text': do_predict(str(message['text']))
+                'text': do_predict(TRAINED_MODEL, str(message['text']))
             }
         }
-        response = requests.post(
+        response_message = requests.post(
            FB_API_URL,
            json=request_body
         ).json()
-        response_message = response
     else:
         response_message = 'ok'
 
@@ -60,4 +85,4 @@ def chatbot():
 
 
 if __name__ == '__main__':
-    app.run(threaded=True, port=5000)
+    APP.run()

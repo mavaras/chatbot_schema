@@ -1,4 +1,9 @@
 flask==1.1.2
+requests==2.21.0
 flask_cors==3.0.10
-keras==2.4.3
-numpy==1.18.5
+wheel==0.35
+keras==2.1.5
+# http://github.com/tensorflow/tensorflow/issues/19584
+tensorflow==1.7.0
+h5py==2.10.0
+gunicorn
