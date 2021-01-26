@@ -33,7 +33,7 @@ TRAINED_MODEL.load_weights(MODEL_WEIGHTS_PATH)
 
 @APP.route('/')
 def entrypoint():
-    return '<h1>ChatBot app entrypoint. Please notice that model path is /cb</h1>'
+    return '<h1>ChatBot app entrypoint. Please notice that model path is /chatbot</h1>'
 
 
 @APP.route('/test/<word>')
@@ -63,8 +63,6 @@ def chatbot():
     data = request.get_json()
     message = data['entry'][0]['messaging'][0]['message']
     sender_id = data['entry'][0]['messaging'][0]['sender']['id']
-    print(message)
-    print(sender_id)
     if 'text' in message and message['text']:
         request_body = {
             'recipient': {
